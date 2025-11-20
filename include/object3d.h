@@ -5,9 +5,14 @@
 #include <osg/Geode>
 #include <osg/Vec3d>
 #include <osg/Vec4>
+#include <osg/Switch>
+#include <osg/Billboard>
+#include <osg/Texture2D>
+#include <osg/BlendFunc>
 #include <osgEarth/MapNode>
 #include <osgEarth/EllipsoidModel>
 #include "LodConfig.h"
+#include <QString>
 
 /**
  * @file object3d.h
@@ -77,6 +82,27 @@ public:
      * @brief Get the model node (for track line attachment, etc.)
      */
     osg::Node* modelObject() { return m_onceTransform.get(); }
+    
+    /**
+     * @brief Set Billboard image (PNG format, transparent background)
+     * @param imagePath Path to the billboard image file
+     * @param width Width of the billboard in meters (default: 50000.0)
+     * @param height Height of the billboard in meters (default: 50000.0)
+     */
+    void setBillboardImage(const QString& imagePath, double width = 50000.0, double height = 50000.0);
+    
+    /**
+     * @brief Set LOD distance thresholds
+     * @param nearDist Distance threshold for near (show 3D model), in meters
+     * @param farDist Distance threshold for far (hide everything), in meters
+     */
+    void setLODDistances(double nearDist, double farDist);
+    
+    /**
+     * @brief Update LOD based on camera position (call per frame or periodically)
+     * @param eyePosition Camera position in world coordinates
+     */
+    void updateLOD(const osg::Vec3d& eyePosition);
 
 protected:
     /**
@@ -90,6 +116,14 @@ protected:
      * Only called when attitude or scale changes
      */
     void updateOnceTransform();
+    
+    /**
+     * @brief Create billboard from image file
+     * @param imagePath Path to the image file
+     * @param width Width of the billboard in meters
+     * @param height Height of the billboard in meters
+     */
+    void createBillboard(const QString& imagePath, double width, double height);
 
     // Cached EllipsoidModel to avoid creating it every time
     static osg::ref_ptr<osg::EllipsoidModel> s_ellipsoid;
@@ -120,6 +154,13 @@ protected:
     osg::ref_ptr<osg::MatrixTransform> m_earthTransform;  // Earth-relative position
     osg::ref_ptr<osg::MatrixTransform> m_onceTransform;   // Local rotation and scale
     osg::ref_ptr<osg::Group> m_modelGroup;                // Container for model and attachments
+    
+    // LOD support with Billboard
+    osg::ref_ptr<osg::Billboard>       m_billboardNode;   // Billboard image node
+    osg::ref_ptr<osg::Switch>          m_lodSwitch;       // LOD switch control
+    
+    double m_nearDistance = 500000.0;   // 500km - show 3D model
+    double m_farDistance  = 2000000.0;  // 2000km - hide everything
 };
 
 #endif // OBJECT3D_H

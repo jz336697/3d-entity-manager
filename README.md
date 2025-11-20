@@ -13,6 +13,10 @@ A high-performance 3D entity management system for osgEarth, optimized to suppor
 
 ## 🚀 Key Features
 
+- **Billboard-based LOD**: Distance-based switching between 3D models and 2D billboard images
+  - **< 500km**: Full 3D models (high detail)
+  - **500km - 2000km**: Billboard images (2-3x performance boost)
+  - **> 2000km**: Hidden (6x performance boost)
 - **Dynamic LOD System**: Automatically adjusts detail level based on camera distance
 - **Dirty Flag System**: Only updates when data actually changes (epsilon comparison)
 - **Hierarchical Update Frequency**: Near entities update more frequently than distant ones
@@ -38,8 +42,10 @@ A high-performance 3D entity management system for osgEarth, optimized to suppor
 
 ### Testing Tools
 
+- **PerformanceTestManager**: Manager for large-scale performance testing with LOD
 - **DdsDataSimulator**: Simulates entity movement for testing without real DDS
 - **IntegrationExample.cpp**: Complete integration examples
+- **PerformanceTestExample.cpp**: Billboard LOD demonstration with 200 entities
 
 ## 🔧 Building
 

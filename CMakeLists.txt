@@ -29,6 +29,7 @@ set(SOURCES
     src/ShipModel.cpp
     src/MissileModel.cpp
     src/EntityManager.cpp
+    src/PerformanceTestManager.cpp
 )
 
 # Header files
@@ -42,6 +43,7 @@ set(HEADERS
     include/MissileModel.h
     include/EntityManager.h
     include/DdsDataSimulator.h
+    include/PerformanceTestManager.h
 )
 
 # Create library
@@ -70,6 +72,14 @@ option(BUILD_EXAMPLES "Build example programs" OFF)
 if(BUILD_EXAMPLES)
     add_executable(IntegrationExample examples/IntegrationExample.cpp)
     target_link_libraries(IntegrationExample
+        3d-entity-manager
+        Qt5::Core
+        ${OPENSCENEGRAPH_LIBRARIES}
+        ${OSGEARTH_LIBRARY}
+    )
+    
+    add_executable(PerformanceTestExample examples/PerformanceTestExample.cpp)
+    target_link_libraries(PerformanceTestExample
         3d-entity-manager
         Qt5::Core
         ${OPENSCENEGRAPH_LIBRARIES}
