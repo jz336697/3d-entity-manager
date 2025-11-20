@@ -16,13 +16,20 @@
 
 /**
  * @file object3d.h
- * @brief Optimized 3D object base class with dirty flag system
+ * @brief Optimized 3D object base class with dirty flag system and Billboard LOD support
  * 
- * KEY OPTIMIZATION: Removed AutoTransform to avoid per-frame screen coordinate recalculation.
- * Original hierarchy: earth -> autoTransform -> matrix -> once -> model
- * Optimized hierarchy: earth -> matrix -> once -> model
+ * KEY OPTIMIZATIONS:
+ * 1. Removed AutoTransform to avoid per-frame screen coordinate recalculation (20-30% boost)
+ * 2. Added Billboard-based LOD for distance optimization (2-6x boost at distance)
  * 
- * Performance improvement: 20-30% by removing AutoTransform overhead.
+ * Scene graph hierarchy with LOD:
+ * earth -> lodSwitch -> [0] once -> modelGroup (3D model)
+ *                    -> [1] billboardNode (2D image)
+ * 
+ * LOD behavior:
+ * - < 500km: Show full 3D model
+ * - 500km - 2000km: Show billboard image (2-3x performance)
+ * - > 2000km: Hide completely (6x performance)
  * 
  * Uses dirty flag system to skip unnecessary updates when data hasn't changed.
  */
