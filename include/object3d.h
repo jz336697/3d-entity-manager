@@ -26,10 +26,10 @@
  * earth -> lodSwitch -> [0] once -> modelGroup (3D model)
  *                    -> [1] billboardNode (2D image)
  * 
- * LOD behavior:
+ * LOD behavior (two-level strategy):
  * - < 500km: Show full 3D model
- * - 500km - 2000km: Show billboard image (2-3x performance)
- * - > 2000km: Hide completely (6x performance)
+ * - >= 500km: Show billboard image (never auto-hide)
+ * - Manual hide only via setVisible(false)
  * 
  * Uses dirty flag system to skip unnecessary updates when data hasn't changed.
  */
@@ -101,7 +101,12 @@ public:
     /**
      * @brief Set LOD distance thresholds
      * @param nearDist Distance threshold for near (show 3D model), in meters
-     * @param farDist Distance threshold for far (hide everything), in meters
+     * @param farDist Deprecated - no longer used, retained for backward compatibility
+     * 
+     * LOD strategy (two-level):
+     * - distance < nearDist: Display 3D model
+     * - distance >= nearDist: Display Billboard image
+     * - Never auto-hides; hiding only via setVisible(false)
      */
     void setLODDistances(double nearDist, double farDist);
     
@@ -167,7 +172,7 @@ protected:
     osg::ref_ptr<osg::Switch>          m_lodSwitch;       // LOD switch control
     
     double m_nearDistance = 500000.0;   // 500km - show 3D model
-    double m_farDistance  = 2000000.0;  // 2000km - hide everything
+    double m_farDistance  = 2000000.0;  // Deprecated - no longer used in two-level LOD
 };
 
 #endif // OBJECT3D_H
