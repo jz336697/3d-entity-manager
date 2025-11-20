@@ -1,7 +1,10 @@
 #include "object3d.h"
 #include "AttitudeUtils.h"
 #include <osg/Matrix>
+#include <osg/Geometry>
+#include <osgDB/ReadFile>
 #include <cmath>
+#include <QDebug>
 
 // Static member initialization
 osg::ref_ptr<osg::EllipsoidModel> Object3D::s_ellipsoid = nullptr;
@@ -27,14 +30,17 @@ Object3D::Object3D()
     , m_attitudeDirty(true)
     , m_scaleDirty(true)
 {
-    // Create scene graph hierarchy (optimized - no AutoTransform)
-    // earth -> matrix -> once -> modelGroup
+    // Create scene graph hierarchy with LOD support
+    // earth -> lodSwitch -> [0] once -> modelGroup (3D model)
+    //                    -> [1] billboardNode (image)
     m_earthTransform = new osg::MatrixTransform();
     m_onceTransform = new osg::MatrixTransform();
     m_modelGroup = new osg::Group();
+    m_lodSwitch = new osg::Switch();
     
-    m_earthTransform->addChild(m_onceTransform.get());
     m_onceTransform->addChild(m_modelGroup.get());
+    m_lodSwitch->addChild(m_onceTransform.get(), true);  // Index 0: 3D model (default: visible)
+    m_earthTransform->addChild(m_lodSwitch.get());
 }
 
 Object3D::~Object3D()
@@ -90,7 +96,11 @@ void Object3D::setVisible(bool visible)
 {
     if (m_visible != visible) {
         m_visible = visible;
-        m_earthTransform->setNodeMask(visible ? 0xFFFFFFFF : 0x0);
+        if (m_lodSwitch.valid()) {
+            m_lodSwitch->setNodeMask(visible ? ~0u : 0u);
+        } else {
+            m_earthTransform->setNodeMask(visible ? 0xFFFFFFFF : 0x0);
+        }
     }
 }
 
@@ -140,4 +150,82 @@ void Object3D::updateOnceTransform()
     osg::Matrix transform = scale * rotation;
     
     m_onceTransform->setMatrix(transform);
+}
+
+void Object3D::createBillboard(const QString& imagePath, double width, double height)
+{
+    osg::ref_ptr<osg::Image> image = osgDB::readImageFile(imagePath.toStdString());
+    if (!image.valid())
+    {
+        qWarning() << "[Object3D] Failed to load billboard image:" << imagePath;
+        return;
+    }
+
+    osg::ref_ptr<osg::Texture2D> texture = new osg::Texture2D(image.get());
+    texture->setWrap(osg::Texture::WRAP_S, osg::Texture::CLAMP_TO_EDGE);
+    texture->setWrap(osg::Texture::WRAP_T, osg::Texture::CLAMP_TO_EDGE);
+
+    osg::ref_ptr<osg::Geometry> quad = osg::createTexturedQuadGeometry(
+        osg::Vec3(-width/2, 0, -height/2),
+        osg::Vec3(width, 0, 0),
+        osg::Vec3(0, 0, height)
+    );
+
+    osg::StateSet* ss = quad->getOrCreateStateSet();
+    ss->setTextureAttributeAndModes(0, texture.get(), osg::StateAttribute::ON);
+    ss->setMode(GL_BLEND, osg::StateAttribute::ON);
+    ss->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+    ss->setRenderingHint(osg::StateSet::TRANSPARENT_BIN);
+    ss->setAttributeAndModes(new osg::BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+    m_billboardNode = new osg::Billboard();
+    m_billboardNode->setMode(osg::Billboard::POINT_ROT_EYE);
+    m_billboardNode->addDrawable(quad.get(), osg::Vec3(0, 0, 0));
+}
+
+void Object3D::setBillboardImage(const QString& imagePath, double width, double height)
+{
+    createBillboard(imagePath, width, height);
+    
+    if (m_billboardNode.valid() && m_lodSwitch.valid())
+    {
+        if (m_lodSwitch->getNumChildren() < 2)
+            m_lodSwitch->addChild(m_billboardNode.get(), false);  // Index 1: image (default: hidden)
+        else
+            m_lodSwitch->setChild(1, m_billboardNode.get());
+    }
+}
+
+void Object3D::setLODDistances(double nearDist, double farDist)
+{
+    m_nearDistance = nearDist;
+    m_farDistance = farDist;
+}
+
+void Object3D::updateLOD(const osg::Vec3d& eyePosition)
+{
+    if (!m_lodSwitch.valid() || !m_earthTransform.valid())
+        return;
+
+    osg::Vec3d objectPos = m_earthTransform->getMatrix().getTrans();
+    double distance = (eyePosition - objectPos).length();
+
+    if (distance < m_nearDistance)
+    {
+        // Near distance: show 3D model
+        m_lodSwitch->setValue(0, true);
+        m_lodSwitch->setValue(1, false);
+    }
+    else if (distance < m_farDistance)
+    {
+        // Mid distance: show billboard image
+        m_lodSwitch->setValue(0, false);
+        m_lodSwitch->setValue(1, true);
+    }
+    else
+    {
+        // Far distance: hide everything
+        m_lodSwitch->setValue(0, false);
+        m_lodSwitch->setValue(1, false);
+    }
 }
