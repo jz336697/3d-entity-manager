@@ -67,7 +67,10 @@ void PerformanceTestManager::createTestEntities(int count)
         m_entities.append(entity);
     }
     
-    qDebug() << "[PerformanceTestManager] Created" << m_entities.size() << "entity pairs";
+    qDebug() << "[PerformanceTestManager] Successfully created" << count << "entities";
+    
+    // Apply unified LOD mode by default
+    setGlobalLODMode(m_unifiedLODMode);
 }
 
 void PerformanceTestManager::setBillboardImages(const QString& shipImagePath, const QString& missileImagePath)
@@ -161,12 +164,67 @@ void PerformanceTestManager::updateLOD()
 
     osg::Vec3d eyePos = m_viewer->getCamera()->getInverseViewMatrix().getTrans();
 
+    if (!m_unifiedLODMode)
+    {
+        // Individual mode: each entity calculates distance independently (original way)
+        for (auto& entity : m_entities)
+        {
+            if (entity.ship && entity.ship->modelObject())
+                entity.ship->updateLOD(eyePos);
+            
+            if (entity.missile && entity.missile->modelObject())
+                entity.missile->updateLOD(eyePos);
+        }
+    }
+    else
+    {
+        // Unified mode: switch all entities uniformly based on camera altitude
+        
+        // Calculate camera altitude (distance from earth surface)
+        // Earth radius approximately 6371000 meters
+        const double EARTH_RADIUS = 6371000.0;
+        double cameraAltitude = eyePos.length() - EARTH_RADIUS;
+        
+        // Determine global LOD level based on camera altitude
+        // altitude < 500km: show 3D model
+        // altitude >= 500km: show Billboard image
+        int globalLevel = (cameraAltitude < 500000.0) ? 0 : 1;
+        
+        // Set unified LOD level for all entities
+        setGlobalLODLevel(globalLevel);
+    }
+}
+
+void PerformanceTestManager::setGlobalLODMode(bool unifiedMode)
+{
+    m_unifiedLODMode = unifiedMode;
+    
+    qDebug() << "[PerformanceTestManager] Setting global LOD mode:" 
+             << (unifiedMode ? "Unified" : "Individual");
+    
+    // Disable/enable auto LOD for each entity
     for (auto& entity : m_entities)
     {
         if (entity.ship && entity.ship->modelObject())
-            entity.ship->updateLOD(eyePos);
+            entity.ship->setAutoLOD(!unifiedMode);
         
         if (entity.missile && entity.missile->modelObject())
-            entity.missile->updateLOD(eyePos);
+            entity.missile->setAutoLOD(!unifiedMode);
+    }
+    
+    qDebug() << "[PerformanceTestManager] Auto LOD" 
+             << (unifiedMode ? "disabled" : "enabled") 
+             << "for all entities";
+}
+
+void PerformanceTestManager::setGlobalLODLevel(int level)
+{
+    for (auto& entity : m_entities)
+    {
+        if (entity.ship && entity.ship->modelObject())
+            entity.ship->forceLODLevel(level);
+        
+        if (entity.missile && entity.missile->modelObject())
+            entity.missile->forceLODLevel(level);
     }
 }

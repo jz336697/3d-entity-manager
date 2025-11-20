@@ -115,6 +115,18 @@ public:
      * @param eyePosition Camera position in world coordinates
      */
     void updateLOD(const osg::Vec3d& eyePosition);
+    
+    /**
+     * @brief Force set LOD level (for unified mode)
+     * @param level 0=3D model, 1=Billboard image
+     */
+    void forceLODLevel(int level);
+    
+    /**
+     * @brief Enable/disable automatic LOD calculation
+     * @param enabled true=auto calculate distance switching, false=use forceLODLevel manual control
+     */
+    void setAutoLOD(bool enabled);
 
 protected:
     /**
@@ -173,6 +185,7 @@ protected:
     
     double m_nearDistance = 500000.0;   // 500km - show 3D model
     double m_farDistance  = 2000000.0;  // Deprecated - no longer used in two-level LOD
+    bool m_autoLOD = true;              // Enable automatic LOD (default: enabled)
 };
 
 #endif // OBJECT3D_H

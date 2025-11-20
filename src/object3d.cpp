@@ -205,6 +205,10 @@ void Object3D::setLODDistances(double nearDist, double farDist)
 
 void Object3D::updateLOD(const osg::Vec3d& eyePosition)
 {
+    // Skip if auto LOD is disabled
+    if (!m_autoLOD)
+        return;
+    
     if (!m_lodSwitch.valid() || !m_earthTransform.valid())
         return;
 
@@ -223,4 +227,28 @@ void Object3D::updateLOD(const osg::Vec3d& eyePosition)
         m_lodSwitch->setValue(0, false);
         m_lodSwitch->setValue(1, true);
     }
+}
+
+void Object3D::forceLODLevel(int level)
+{
+    if (!m_lodSwitch.valid())
+        return;
+    
+    if (level == 0)
+    {
+        // Force show 3D model
+        m_lodSwitch->setValue(0, true);   // model on
+        m_lodSwitch->setValue(1, false);  // image off
+    }
+    else if (level == 1)
+    {
+        // Force show Billboard image
+        m_lodSwitch->setValue(0, false);  // model off
+        m_lodSwitch->setValue(1, true);   // image on
+    }
+}
+
+void Object3D::setAutoLOD(bool enabled)
+{
+    m_autoLOD = enabled;
 }

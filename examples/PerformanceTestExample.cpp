@@ -74,6 +74,9 @@ int main(int argc, char** argv)
     // 🔥 NEW: Set LOD distances
     perfManager->setLODDistances(500000.0, 2000000.0);  // 500km - 2000km
     
+    // 🔥 NEW: Enable unified LOD mode (default is already enabled)
+    perfManager->setGlobalLODMode(true);
+    
     // Start animation
     perfManager->startAnimation(100);
     
@@ -85,17 +88,18 @@ int main(int argc, char** argv)
     viewer.getCamera()->getOrCreateStateSet()->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
     
     qDebug() << "========================================";
-    qDebug() << "Performance Test with LOD Optimization";
+    qDebug() << "Performance Test with Unified LOD Mode";
     qDebug() << "========================================";
     qDebug() << "Entity count: 200 (100 ships + 100 missiles)";
+    qDebug() << "LOD Mode: Unified (all entities switch together)";
     qDebug() << "LOD settings:";
-    qDebug() << "  < 500km: Full 3D models";
-    qDebug() << "  500km - 2000km: Billboard images";
-    qDebug() << "  > 2000km: Hidden";
+    qDebug() << "  Camera altitude < 500km: All entities show 3D models";
+    qDebug() << "  Camera altitude >= 500km: All entities show billboards";
     qDebug() << "";
     qDebug() << "Controls:";
     qDebug() << "  - Press 's' key to show OSG statistics";
-    qDebug() << "  - Move camera to see LOD switching";
+    qDebug() << "  - Mouse wheel to zoom (LOD will switch uniformly)";
+    qDebug() << "  - Esc to exit";
     qDebug() << "========================================";
     
     // Run viewer

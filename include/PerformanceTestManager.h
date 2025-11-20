@@ -71,6 +71,24 @@ public:
      * @brief Stop animation and LOD updates
      */
     void stopAnimation();
+    
+    /**
+     * @brief Set global LOD mode
+     * @param unifiedMode true=unified mode (switch based on camera altitude)
+     *                    false=individual mode (each entity calculates distance independently)
+     */
+    void setGlobalLODMode(bool unifiedMode);
+    
+    /**
+     * @brief Manually set global LOD level (only effective in unified mode)
+     * @param level 0=all entities show 3D model, 1=all entities show image
+     */
+    void setGlobalLODLevel(int level);
+    
+    /**
+     * @brief Get entity count
+     */
+    int getEntityCount() const { return m_entities.size(); }
 
 private slots:
     /**
@@ -92,6 +110,7 @@ private:
     QTimer* m_lodTimer;
     
     double m_animationTime;
+    bool m_unifiedLODMode = true;  // Default: enable unified LOD mode
 };
 
 #endif // PERFORMANCETESTMANAGER_H
