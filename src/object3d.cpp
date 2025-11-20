@@ -199,7 +199,8 @@ void Object3D::setBillboardImage(const QString& imagePath, double width, double 
 void Object3D::setLODDistances(double nearDist, double farDist)
 {
     m_nearDistance = nearDist;
-    m_farDistance = farDist;
+    // farDist is deprecated - no longer used in two-level LOD strategy
+    // Parameter retained for backward compatibility only
 }
 
 void Object3D::updateLOD(const osg::Vec3d& eyePosition)
@@ -216,16 +217,10 @@ void Object3D::updateLOD(const osg::Vec3d& eyePosition)
         m_lodSwitch->setValue(0, true);
         m_lodSwitch->setValue(1, false);
     }
-    else if (distance < m_farDistance)
-    {
-        // Mid distance: show billboard image
-        m_lodSwitch->setValue(0, false);
-        m_lodSwitch->setValue(1, true);
-    }
     else
     {
-        // Far distance: hide everything
+        // Far distance: show billboard image (never auto-hide)
         m_lodSwitch->setValue(0, false);
-        m_lodSwitch->setValue(1, false);
+        m_lodSwitch->setValue(1, true);
     }
 }
